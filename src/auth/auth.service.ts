@@ -19,27 +19,30 @@ export class AuthService {
   ) {}
 
   async signup(signupDto: SignupDto) {
-    const hashedPassword = await bcrypt.hash(signupDto.password, 10);
+    const { email, password } = signupDto;
 
-    try {
-      const user = await this.prisma.user.create({
-        data: { email: signupDto.email, password: hashedPassword },
-      });
+    // 이메일 중복 여부 확인
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email },
+    });
 
-      const payload = { sub: user.id, email: user.email };
-      return {
-        access_token: this.jwtService.sign(payload),
-      };
-    } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        throw new ConflictException('Email already exists.');
-      }
-
-      throw error;
+    if (existingUser) {
+      throw new ConflictException('Email already exists.');
     }
+
+    // 비밀번호 해싱
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // 유저 생성
+    const user = await this.prisma.user.create({
+      data: { email, password: hashedPassword },
+    });
+
+    // JWT 토큰 생성
+    const payload = { sub: user.id, email: user.email };
+    return {
+      access_token: this.jwtService.sign(payload),
+    };
   }
 
   async login(loginDto: LoginDto) {
