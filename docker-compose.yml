@@ -27,5 +27,18 @@ services:
       - "3000:3000"
     command: sh -c "npx prisma migrate deploy && npm run start"
 
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    user: root
+    restart: always
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+
 volumes:
   postgres_data:
+  jenkins_home:
